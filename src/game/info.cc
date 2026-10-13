@@ -1300,6 +1300,10 @@ int GetInventoryWeight(uint32 CreatureID){
 }
 
 bool CheckRight(uint32 CharacterID, RIGHT Right){
+	if(FreePremium && Right == PREMIUM_ACCOUNT){
+		return true;
+	}
+
 	TPlayer *Player = GetPlayer(CharacterID);
 	if(Player == NULL){
 		error("CheckRight: Spieler existiert nicht; Right=%d.\n", Right);
