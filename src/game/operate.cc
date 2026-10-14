@@ -512,23 +512,29 @@ void CheckMapDestination(uint32 CreatureID, Object Obj, Object MapCon){
 			throw ERROR;
 		}
 
-		if(OrigZ == DestZ || MovingCreature->Type != MONSTER){
-			if(!MovingCreature->MovePossible(DestX, DestY, DestZ, true, OrigZ != DestZ)){
-				if(CreatureID == MovingCreature->ID){
-					throw MOVENOTPOSSIBLE;
-				}else{
-					throw NOROOM;
-				}
+		if(MovingCreature->Type == MONSTER && OrigZ != DestZ){
+			throw OUTOFRANGE;
+		}
+
+		if(CreatureID != MovingCreature->ID && OrigZ != DestZ){
+			throw MOVENOTPOSSIBLE;
+		}
+
+		if(!MovingCreature->MovePossible(DestX, DestY, DestZ, true, OrigZ != DestZ)){
+			if(CreatureID == MovingCreature->ID){
+				throw MOVENOTPOSSIBLE;
+			}else{
+				throw NOROOM;
+			}
+		}
+
+		if(CreatureID != MovingCreature->ID){
+			if(CoordinateFlag(DestX, DestY, DestZ, AVOID)){
+				throw NOROOM;
 			}
 
-			if(CreatureID != MovingCreature->ID){
-				if(CoordinateFlag(DestX, DestY, DestZ, AVOID)){
-					throw NOROOM;
-				}
-
-				if(IsProtectionZone(OrigX, OrigY, OrigZ) && !IsProtectionZone(DestX, DestY, DestZ)){
-					throw PROTECTIONZONE;
-				}
+			if(IsProtectionZone(OrigX, OrigY, OrigZ) && !IsProtectionZone(DestX, DestY, DestZ)){
+				throw PROTECTIONZONE;
 			}
 		}
 	}
