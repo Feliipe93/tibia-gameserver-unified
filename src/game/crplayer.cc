@@ -1,5 +1,6 @@
 #include "cr.hh"
 #include "config.hh"
+#include "../database/db.hh"
 #include "houses.hh"
 #include "info.hh"
 #include "moveuse.hh"
@@ -2178,7 +2179,16 @@ bool LoadPlayerData(TPlayerData *Slot){
 		Slot->Minimum[SkillNr] = INT_MIN;
 	}
 
-	// NOTE(fusion): First login. Use defaults.
+	// Hybrid Mode: If database storage is enabled, try loading from modern database first
+	if(strcmp(PlayerStorageMode, "database") == 0){
+		if(DB_LoadCharacterState(Slot)){
+			return true;
+		}
+		// If character is not found in database, continue below to check if legacy .usr file exists
+		// for seamless, automatic migration into database!
+	}
+
+	// NOTE(fusion): First login or legacy file check. Use defaults if not found.
 	char FileName[4096];
 	PlayerDataPath(FileName, sizeof(FileName), Slot->CharacterID);
 	if(!FileExists(FileName)){
@@ -2422,6 +2432,11 @@ bool LoadPlayerData(TPlayerData *Slot){
 		}
 	}
 
+	if(Result && strcmp(PlayerStorageMode, "database") == 0){
+		// Transparent auto-migration: character was loaded from legacy file, persist into database!
+		DB_SaveCharacterState(Slot);
+	}
+
 	return Result;
 }
 
@@ -2434,6 +2449,14 @@ void SavePlayerData(TPlayerData *Slot){
 	if(Slot->CharacterID == 0){
 		error("SavePlayerData: Slot enthält keinen Charakter.\n");
 		return;
+	}
+
+	// Hybrid Mode: If database storage is enabled, save to modern database with ACID transaction
+	if(strcmp(PlayerStorageMode, "database") == 0){
+		if(DB_SaveCharacterState(Slot)){
+			return; // Successfully saved to database!
+		}
+		error("SavePlayerData: Failed to save character %u to database, falling back to legacy file.\n", Slot->CharacterID);
 	}
 
 	// TODO(fusion): This is prone to problems if we don't backup user files.

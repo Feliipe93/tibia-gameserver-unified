@@ -56,15 +56,21 @@ extern TDatabaseSettings MANAGER_DATABASE;
 extern int NumberOfQueryManagers;
 extern TQueryManagerSettings QUERY_MANAGER[10];
 
-// Database Engine Configuration (SQLite / MySQL / MariaDB)
+// Database Engine Configuration (SQLite / MySQL / MariaDB / PostgreSQL)
 extern char DB_Type[16];
 extern char DB_File[256];
+extern char PlayerStorageMode[16];
 extern char MySQL_Host[128];
 extern int  MySQL_Port;
 extern char MySQL_User[64];
 extern char MySQL_Password[64];
 extern char MySQL_Database[64];
 extern bool MySQL_Reconnect;
+extern char PG_Host[128];
+extern int  PG_Port;
+extern char PG_User[64];
+extern char PG_Password[64];
+extern char PG_Database[64];
 
 // Gameplay / Rates & Multipliers
 extern int RateExp;

@@ -84,15 +84,21 @@ TDatabaseSettings MANAGER_DATABASE;
 int NumberOfQueryManagers;
 TQueryManagerSettings QUERY_MANAGER[10];
 
-// Database Engine Configuration (SQLite / MySQL / MariaDB)
+// Database Engine Configuration (SQLite / MySQL / MariaDB / PostgreSQL)
 char DB_Type[16];
 char DB_File[256];
+char PlayerStorageMode[16] = "database";
 char MySQL_Host[128];
 int  MySQL_Port;
 char MySQL_User[64];
 char MySQL_Password[64];
 char MySQL_Database[64];
 bool MySQL_Reconnect;
+char PG_Host[128] = "127.0.0.1";
+int  PG_Port = 5432;
+char PG_User[64] = "postgres";
+char PG_Password[64] = "";
+char PG_Database[64] = "tibia";
 
 // Gameplay / Rates & Multipliers
 int RateExp;
@@ -380,6 +386,38 @@ void ReadConfig(void){
 		}else if(strcmp(Identifier, "mysql_reconnect") == 0 || strcmp(Identifier, "sql_reconnect") == 0){
 			const char *val = Script.readIdentifier();
 			MySQL_Reconnect = (val && (strcmp(val, "true") == 0 || strcmp(val, "yes") == 0 || strcmp(val, "1") == 0));
+		}else if(strcmp(Identifier, "player_storage_mode") == 0 || strcmp(Identifier, "playerstoragemode") == 0){
+			const char *val = Script.readString();
+			if(val){
+				strncpy(PlayerStorageMode, val, sizeof(PlayerStorageMode) - 1);
+				PlayerStorageMode[sizeof(PlayerStorageMode) - 1] = 0;
+			}
+		}else if(strcmp(Identifier, "pg_host") == 0 || strcmp(Identifier, "postgres_host") == 0){
+			const char *val = Script.readString();
+			if(val){
+				strncpy(PG_Host, val, sizeof(PG_Host) - 1);
+				PG_Host[sizeof(PG_Host) - 1] = 0;
+			}
+		}else if(strcmp(Identifier, "pg_port") == 0 || strcmp(Identifier, "postgres_port") == 0){
+			PG_Port = Script.readNumber();
+		}else if(strcmp(Identifier, "pg_user") == 0 || strcmp(Identifier, "postgres_user") == 0){
+			const char *val = Script.readString();
+			if(val){
+				strncpy(PG_User, val, sizeof(PG_User) - 1);
+				PG_User[sizeof(PG_User) - 1] = 0;
+			}
+		}else if(strcmp(Identifier, "pg_password") == 0 || strcmp(Identifier, "postgres_password") == 0){
+			const char *val = Script.readString();
+			if(val){
+				strncpy(PG_Password, val, sizeof(PG_Password) - 1);
+				PG_Password[sizeof(PG_Password) - 1] = 0;
+			}
+		}else if(strcmp(Identifier, "pg_database") == 0 || strcmp(Identifier, "postgres_database") == 0){
+			const char *val = Script.readString();
+			if(val){
+				strncpy(PG_Database, val, sizeof(PG_Database) - 1);
+				PG_Database[sizeof(PG_Database) - 1] = 0;
+			}
 		}else if(strcmp(Identifier, "rate_exp") == 0 || strcmp(Identifier, "rateexp") == 0){
 			RateExp = Script.readNumber();
 		}else if(strcmp(Identifier, "rate_skill") == 0 || strcmp(Identifier, "rateskill") == 0){
