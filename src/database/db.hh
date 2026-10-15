@@ -13,9 +13,10 @@ struct TCharacterLoginData {
 };
 
 // Database Management Interface
-bool DatabaseInit(const char *DatabaseFile);
+bool DatabaseInit(const char *DatabaseFile = nullptr);
 void DatabaseExit(void);
 bool DatabaseExecuteSchema(void);
+const char *DatabaseGetDriverName(void);
 
 // Login Service Queries
 int DB_LoginAccount(uint32 AccountID, const char *Password, const char *IPAddress,
@@ -55,5 +56,10 @@ int DB_RemoveBuddy(uint32 AccountID, uint32 Buddy);
 int DB_DecrementIsOnline(uint32 CharacterID);
 int DB_LoadPlayers(int MinimumCharacterID, int *NumberOfPlayers,
 		char (*PlayerNames)[30], uint32 *CharacterIDs);
+
+// Player Persistence Queries
+struct TPlayerData;
+bool DB_SaveCharacterState(const struct TPlayerData *Slot);
+bool DB_LoadCharacterState(struct TPlayerData *Slot);
 
 #endif // TIBIA_DB_HH_

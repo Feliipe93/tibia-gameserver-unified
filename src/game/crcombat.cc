@@ -142,7 +142,7 @@ void TCombat::CheckCombatValues(void){
 			|| OldWand != this->Wand
 			|| OldAmmo != this->Ammo
 			|| OldFist != this->Fist){
-		this->DelayAttack(2000);
+		this->DelayAttack(AttackInterval);
 	}
 }
 
@@ -238,7 +238,7 @@ int TCombat::GetDefendDamage(void){
 		return 0;
 	}
 
-	this->EarliestDefendTime = this->LastDefendTime + 2000;
+	this->EarliestDefendTime = this->LastDefendTime + DefenseInterval;
 	this->LastDefendTime = ServerMilliseconds;
 
 	int AttackMode = this->AttackMode;
@@ -264,7 +264,7 @@ int TCombat::GetDefendDamage(void){
 	Object Shield = this->Shield;
 	if(Shield != NONE){
 		ObjectType ShieldType = Shield.getObjectType();
-		if(ShieldType.getFlag(WEAROUT)){
+		if(RemoveWeaponCharges && ShieldType.getFlag(WEAROUT)){
 			uint32 RemainingUses = Shield.getAttribute(REMAININGUSES);
 			if(RemainingUses > 1){
 				Change(Shield, REMAININGUSES, RemainingUses - 1);
@@ -637,7 +637,7 @@ void TCombat::Attack(void){
 		}
 	}
 
-	this->DelayAttack(2000);
+	this->DelayAttack(AttackInterval);
 
 	if(Target->IsDead){
 		this->StopAttack(0);
@@ -673,7 +673,7 @@ void TCombat::CloseAttack(TCreature *Target){
 	Object Close = this->Close;
 	if(Close != NONE){
 		ObjectType CloseType = Close.getObjectType();
-		if(CloseType.getFlag(WEAROUT)){
+		if(RemoveWeaponCharges && CloseType.getFlag(WEAROUT)){
 			uint32 RemainingUses = Close.getAttribute(REMAININGUSES);
 			if(RemainingUses > 1){
 				Change(Close, REMAININGUSES, RemainingUses - 1);
@@ -833,16 +833,18 @@ void TCombat::DistanceAttack(TCreature *Target){
 				ANIMATION_NONE, 2, &Impact, EFFECT_FIRE_BURST);
 	}
 
-	try{
-		if(random(0, 99) < Fragility){
-			Delete(this->Ammo, 1);
-		}else{
-			Move(0, this->Ammo, DropCon, 1, false, NONE);
-		}
-	}catch(RESULT r){
-		if(r != DESTROYED){
-			error("TCombat::RangeAttack: Konnte Ammo nicht verschieben/löschen"
-					" (Exception %d, [%d,%d,%d].\n", r, DropX, DropY, DropZ);
+	if(RemoveWeaponAmmunition){
+		try{
+			if(random(0, 99) < Fragility){
+				Delete(this->Ammo, 1);
+			}else{
+				Move(0, this->Ammo, DropCon, 1, false, NONE);
+			}
+		}catch(RESULT r){
+			if(r != DESTROYED){
+				error("TCombat::RangeAttack: Konnte Ammo nicht verschieben/löschen"
+						" (Exception %d, [%d,%d,%d].\n", r, DropX, DropY, DropZ);
+			}
 		}
 	}
 
@@ -898,6 +900,9 @@ uint32 TCombat::GetMostDangerousAttacker(void){
 }
 
 void TCombat::DistributeExperiencePoints(uint32 Exp){
+	if(RateExp > 1){
+		Exp = (uint32)(Exp * RateExp);
+	}
 	TCreature *Master = this->Master;
 	print(3, "%s ist gestorben. Verteile %u EXP...\n", Master->Name, Exp);
 	if(this->CombatDamage == 0){
@@ -931,18 +936,20 @@ void TCombat::DistributeExperiencePoints(uint32 Exp){
 			if(Attacker->Type == PLAYER){
 				// NOTE(fusion): Enable soul regeneration.
 				int AttackerLevel = Attacker->Skills[SKILL_LEVEL]->Get();
-				if(Amount >= AttackerLevel){
-					int Interval = 120;
+				if(Amount >= AttackerLevel && EnableSoulPoints){
+					int Interval = SoulRegenInterval;
 					if(((TPlayer*)Attacker)->GetActivePromotion()){
-						Interval = 15;
+						Interval = SoulRegenIntervalPromoted;
 					}
 
-					int Count = Attacker->Skills[SKILL_SOUL]->TimerValue() % Interval;
-					if(Count == 0){
-						Count = Interval;
-					}
+					if(Interval > 0){
+						int Count = Attacker->Skills[SKILL_SOUL]->TimerValue() % Interval;
+						if(Count == 0){
+							Count = Interval;
+						}
 
-					Attacker->SetTimer(SKILL_SOUL, (240 / Interval), Count, Interval, -1);
+						Attacker->SetTimer(SKILL_SOUL, (240 / Interval), Count, Interval, -1);
+					}
 				}
 			}
 

@@ -1,5 +1,6 @@
 #include "cr.hh"
 #include "config.hh"
+#include "../database/db.hh"
 #include "houses.hh"
 #include "info.hh"
 #include "moveuse.hh"
@@ -336,17 +337,22 @@ void TPlayer::Death(void){
 
 	TCreature::Death();
 
-	if(WorldType == PVP_ENFORCED){
-		this->Combat.DistributeExperiencePoints(this->Skills[SKILL_LEVEL]->Exp / 20);
+	if(WorldType == PVP_ENFORCED || ExperienceByKillingPlayers){
+		int Percent = (PVPEnforcedExpPercent >= 0) ? PVPEnforcedExpPercent : 5;
+		this->Combat.DistributeExperiencePoints((this->Skills[SKILL_LEVEL]->Exp * Percent) / 100);
 	}
 
 	// TODO(fusion): Probably related to blessings?
-	int LossPercent = (this->GetActivePromotion() ? 7 : 10);
+	int BaseLoss = (DeathLosePercent >= 0) ? DeathLosePercent : 10;
+	int LossPercent = (this->GetActivePromotion() ? (BaseLoss * 7 / 10) : BaseLoss);
 	for(int QuestNr = 101; QuestNr <= 105; QuestNr += 1){
 		if(this->GetQuestValue(QuestNr) != 0){
 			this->SetQuestValue(QuestNr, 0);
 			LossPercent -= 1;
 		}
+	}
+	if(LossPercent < 0){
+		LossPercent = 0;
 	}
 
 	this->Skills[SKILL_LEVEL      ]->DecreasePercent(LossPercent);
@@ -1476,6 +1482,12 @@ void TPlayer::RecordAttack(uint32 VictimID){
 		return;
 	}
 
+	if(ProtectionLevel > 1){
+		if(Victim->Skills[SKILL_LEVEL]->Get() < ProtectionLevel || this->Skills[SKILL_LEVEL]->Get() < ProtectionLevel){
+			return;
+		}
+	}
+
 	if(!Victim->InPartyWith(this, true)
 			&& !Victim->IsAttacker(this->ID, true)
 			&& !this->IsAttacker(VictimID, false)){
@@ -1525,7 +1537,7 @@ void TPlayer::RecordMurder(uint32 VictimID){
 	int Playerkilling = this->CheckPlayerkilling(Now);
 	if(Playerkilling != 0){
 		int OldPlayerkillerEnd = PlayerData->PlayerkillerEnd;
-		PlayerData->PlayerkillerEnd = Now + 2592000; // 30 days
+		PlayerData->PlayerkillerEnd = Now + RedSkullDuration;
 		if(OldPlayerkillerEnd == 0){
 			print(3, "Spieler %s ist Playerkiller.\n", this->Name);
 			AnnounceChangedCreature(this->ID, CREATURE_SKULL_CHANGED);
@@ -1580,9 +1592,9 @@ int TPlayer::CheckPlayerkilling(int Now){
 		}
 	}
 
-	if(LastDay >= 6 || LastWeek >= 10 || LastMonth >= 20){
+	if(LastDay >= KillsToBanDay || LastWeek >= KillsToBanWeek || LastMonth >= KillsToBanMonth){
 		return 2; // EXCESSIVE_KILLING ?
-	}else if(LastDay >= 3 || LastWeek >= 5 || LastMonth >= 10){
+	}else if(LastDay >= KillsToRedSkullDay || LastWeek >= KillsToRedSkullWeek || LastMonth >= KillsToRedSkullMonth){
 		return 1; // PLAYERKILLER ?
 	}else{
 		return 0;
@@ -2167,7 +2179,16 @@ bool LoadPlayerData(TPlayerData *Slot){
 		Slot->Minimum[SkillNr] = INT_MIN;
 	}
 
-	// NOTE(fusion): First login. Use defaults.
+	// Hybrid Mode: If database storage is enabled, try loading from modern database first
+	if(strcmp(PlayerStorageMode, "database") == 0){
+		if(DB_LoadCharacterState(Slot)){
+			return true;
+		}
+		// If character is not found in database, continue below to check if legacy .usr file exists
+		// for seamless, automatic migration into database!
+	}
+
+	// NOTE(fusion): First login or legacy file check. Use defaults if not found.
 	char FileName[4096];
 	PlayerDataPath(FileName, sizeof(FileName), Slot->CharacterID);
 	if(!FileExists(FileName)){
@@ -2411,6 +2432,11 @@ bool LoadPlayerData(TPlayerData *Slot){
 		}
 	}
 
+	if(Result && strcmp(PlayerStorageMode, "database") == 0){
+		// Transparent auto-migration: character was loaded from legacy file, persist into database!
+		DB_SaveCharacterState(Slot);
+	}
+
 	return Result;
 }
 
@@ -2423,6 +2449,14 @@ void SavePlayerData(TPlayerData *Slot){
 	if(Slot->CharacterID == 0){
 		error("SavePlayerData: Slot enthält keinen Charakter.\n");
 		return;
+	}
+
+	// Hybrid Mode: If database storage is enabled, save to modern database with ACID transaction
+	if(strcmp(PlayerStorageMode, "database") == 0){
+		if(DB_SaveCharacterState(Slot)){
+			return; // Successfully saved to database!
+		}
+		error("SavePlayerData: Failed to save character %u to database, falling back to legacy file.\n", Slot->CharacterID);
 	}
 
 	// TODO(fusion): This is prone to problems if we don't backup user files.

@@ -1,5 +1,6 @@
 #include "info.hh"
 #include "cr.hh"
+#include "config.hh"
 #include "magic.hh"
 
 const char *GetLiquidName(int LiquidType){
@@ -1225,7 +1226,9 @@ void GetCreatureLight(uint32 CreatureID, int *Brightness, int *Color){
 	}
 
 	int OutBrightness = 0;
-	if(Creature->Skills[SKILL_LIGHT] != NULL){
+	if(AlwaysLight){
+		OutBrightness = 15;
+	}else if(Creature->Skills[SKILL_LIGHT] != NULL){
 		OutBrightness = Creature->Skills[SKILL_LIGHT]->TimerValue();
 	}
 
@@ -1297,6 +1300,10 @@ int GetInventoryWeight(uint32 CreatureID){
 }
 
 bool CheckRight(uint32 CharacterID, RIGHT Right){
+	if(FreePremium && Right == PREMIUM_ACCOUNT){
+		return true;
+	}
+
 	TPlayer *Player = GetPlayer(CharacterID);
 	if(Player == NULL){
 		error("CheckRight: Spieler existiert nicht; Right=%d.\n", Right);

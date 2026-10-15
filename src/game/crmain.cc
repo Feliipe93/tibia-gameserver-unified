@@ -491,9 +491,18 @@ int TCreature::Damage(TCreature *Attacker, int Damage, int DamageType){
 			}
 		}
 
-		Attacker->BlockLogout(60, this->Type == PLAYER);
+		if(this->Type == PLAYER && Responsible != NULL && Responsible->Type == PLAYER){
+			if(ProtectionLevel > 1){
+				if(((TPlayer*)this)->Skills[SKILL_LEVEL]->Get() < ProtectionLevel ||
+				   ((TPlayer*)Responsible)->Skills[SKILL_LEVEL]->Get() < ProtectionLevel){
+					return 0;
+				}
+			}
+		}
+
+		Attacker->BlockLogout(InFightDuration, this->Type == PLAYER);
 		if(Responsible != Attacker){
-			Responsible->BlockLogout(60, this->Type == PLAYER);
+			Responsible->BlockLogout(InFightDuration, this->Type == PLAYER);
 		}
 
 		if(this->Type == PLAYER && Responsible->Type == PLAYER){
@@ -520,7 +529,7 @@ int TCreature::Damage(TCreature *Attacker, int Damage, int DamageType){
 					&& (ObjType.getAttribute(PROTECTIONDAMAGETYPES) & DamageType) != 0){
 				int DamageReduction = ObjType.getAttribute(DAMAGEREDUCTION);
 				Damage = (Damage * (100 - DamageReduction)) / 100;
-				if(ObjType.getFlag(WEAROUT)){
+				if(RemoveWeaponCharges && ObjType.getFlag(WEAROUT)){
 					// TODO(fusion): Ugh... The try..catch block might be used only
 					// when changing the object's type.
 					try{
@@ -789,9 +798,9 @@ int TCreature::Damage(TCreature *Attacker, int Damage, int DamageType){
 		int OldLevel = this->Skills[SKILL_LEVEL]->Get();
 		this->Death();
 		if(Attacker != NULL && this->Type == PLAYER){
-			Attacker->BlockLogout(900, true);
+			Attacker->BlockLogout(WhiteSkullDuration, true);
 			if(Responsible != Attacker){
-				Responsible->BlockLogout(900, true);
+				Responsible->BlockLogout(WhiteSkullDuration, true);
 			}
 		}
 
@@ -2143,7 +2152,14 @@ void ProcessMonsterRaids(void){
 			int ExtraItems = Wave->ExtraItems;
 			for(int i = 1; i <= ExtraItems; i += 1){
 				TItemData *ItemData = Wave->ExtraItem.at(i);
-				if(random(0, 999) > ItemData->Probability){
+				int Prob = ItemData->Probability;
+				if(RateLoot > 1){
+					Prob *= RateLoot;
+					if(Prob > 1000){
+						Prob = 1000;
+					}
+				}
+				if(random(0, 999) > Prob){
 					continue;
 				}
 

@@ -56,6 +56,80 @@ extern TDatabaseSettings MANAGER_DATABASE;
 extern int NumberOfQueryManagers;
 extern TQueryManagerSettings QUERY_MANAGER[10];
 
+// Database Engine Configuration (SQLite / MySQL / MariaDB / PostgreSQL)
+extern char DB_Type[16];
+extern char DB_File[256];
+extern char PlayerStorageMode[16];
+extern char MySQL_Host[128];
+extern int  MySQL_Port;
+extern char MySQL_User[64];
+extern char MySQL_Password[64];
+extern char MySQL_Database[64];
+extern bool MySQL_Reconnect;
+extern char PG_Host[128];
+extern int  PG_Port;
+extern char PG_User[64];
+extern char PG_Password[64];
+extern char PG_Database[64];
+
+// Gameplay / Rates & Multipliers
+extern int RateExp;
+extern int RateSkill;
+extern int RateMagic;
+extern int RateLoot;
+extern int RateSpawn;
+extern int RateHPRegen;
+extern int RateManaRegen;
+
+// Gameplay / Item Consumption & QoL
+extern bool LearnSpells;
+extern bool RemoveChargesFromRunes;
+extern bool RemoveChargesFromVials;
+extern bool RemoveWeaponAmmunition;
+extern bool RemoveWeaponCharges;
+extern bool FreeCapacity;
+extern bool AlwaysLight;
+extern int  MaxSummonsPerPlayer;
+
+// Gameplay / Combat & Timers
+extern int AttackInterval;
+extern int DefenseInterval;
+extern int SpellExhaustion;
+extern int RuneExhaustion;
+extern int StairJumpExhaustion;
+
+// Gameplay / PvP & Skulls
+extern int ProtectionLevel;
+extern int KillsToRedSkullDay;
+extern int KillsToRedSkullWeek;
+extern int KillsToRedSkullMonth;
+extern int KillsToBanDay;
+extern int KillsToBanWeek;
+extern int KillsToBanMonth;
+extern int WhiteSkullDuration;
+extern int InFightDuration;
+extern int RedSkullDuration;
+
+// Gameplay / Death & Losses
+extern int  DeathLosePercent;
+extern bool ExperienceByKillingPlayers;
+extern int  PVPEnforcedExpPercent;
+
+// Gameplay / Soul Points
+extern bool EnableSoulPoints;
+extern int  SoulRegenInterval;
+extern int  SoulRegenIntervalPromoted;
+
+// Gameplay / Houses
+extern int  HouseBuyLevel;
+extern bool HouseOnlyPremium;
+
+// Network & Server Customization
+extern int  LoginPort;
+extern char WorldAddress[64];
+extern char MotdText[256];
+extern bool FreePremium;
+
 void ReadConfig(void);
 
 #endif //TIBIA_CONFIG_HH_

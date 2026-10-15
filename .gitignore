@@ -55,9 +55,6 @@ CMakeScripts/
 *.scc
 *.recipe
 
-# Executables
-*.exe
-
 # Database WAL / Temporary files (preserve schema.sql and initial database)
 *.db-shm
 *.db-wal
@@ -86,11 +83,16 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 .DS_Store
+*.code-workspace
+*.png
 
 # Editor backups
 *~
 .*.swp
 .*.swo
 *.bak
+
+*.pyc
 *.gz
 *.md
+
