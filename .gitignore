@@ -96,3 +96,6 @@ $RECYCLE.BIN/
 *.gz
 *.md
 
+/tibia-game_data/map
+/tibia-game_data
+/spr_dat_772

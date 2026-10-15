@@ -8,7 +8,15 @@ echo       TIBIA DATA STUDIO - LAUNCHING UNIFIED DATA EDITOR
 echo =========================================================================
 echo.
 
-python run_editor.py
+set "PY_CMD=python"
+where python >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" (
+        set "PY_CMD=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+    )
+)
+
+"%PY_CMD%" run_editor.py
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
